@@ -28,6 +28,12 @@ conda run -n pointnet python -m pointnet_final.predict --test-list modelnet40_no
 
 当前预演结果：Instance Accuracy `92.22%`，Class Accuracy `91.10%`。
 
+若现场推理时间充足，也可使用三权重集成，当前预演结果为 Instance Accuracy `92.83%`，Class Accuracy `90.56%`：
+
+```powershell
+conda run -n pointnet python -m pointnet_final.predict --test-root <测试集目录> --cache-name onsite_test --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best_class.pt --output <赛道1-组员姓名学号.csv> --votes 20 --batch-size 24 --workers 4 --force-cache
+```
+
 现场验收时，如果老师下发的是测试目录：
 
 ```powershell

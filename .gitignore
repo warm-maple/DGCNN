@@ -33,4 +33,5 @@ runs/dgcnn_normals_balanced_ft_seed1/*
 
 !runs/rehearsal_submission_fullscore.csv
 !runs/rehearsal_submission_fullscore.csv.metrics.json
-
+!runs/rehearsal_submission_v2_ensemble3_20votes.csv
+!runs/rehearsal_submission_v2_ensemble3_20votes.csv.metrics.json

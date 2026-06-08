@@ -8,6 +8,8 @@
 | 均衡微调整体最优 | `runs/dgcnn_normals_balanced_ft_seed1/best.pt` | 10 | 92.14% | 90.02% |
 | 均衡微调类均值最优 | `runs/dgcnn_normals_balanced_ft_seed1/best_class.pt` | 10 | 92.14% | 90.85% |
 | 三权重集成 | `runs/dgcnn_normals_seed1/best.pt` + balanced `best.pt` + balanced `best_class.pt` | 10 | 92.67% | 90.45% |
+| 三权重集成 | `runs/dgcnn_normals_seed1/best.pt` + balanced `best.pt` + balanced `best_class.pt` | 20 | 92.83% | 90.56% |
 
 推荐 CSV：`runs/rehearsal_submission_fullscore.csv`。
 
+最高整体准确率 CSV：`runs/rehearsal_submission_v2_ensemble3_20votes.csv`。

@@ -15,4 +15,6 @@ For the on-site test set, replace `--test-root` with the released test directory
 Best rehearsal result so far:
 
 - Single balanced DGCNN checkpoint, 20 votes: Instance Accuracy `92.22%`, Class Accuracy `91.10%`.
-- 3-checkpoint ensemble, 10 votes: Instance Accuracy `92.67%`, Class Accuracy `90.45%`.
+- 3-checkpoint ensemble, 20 votes: Instance Accuracy `92.83%`, Class Accuracy `90.56%`.
+
+The single-checkpoint setup is faster and has the larger class-accuracy margin. The ensemble has the best instance accuracy.
