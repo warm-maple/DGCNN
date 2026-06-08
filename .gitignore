@@ -1,0 +1,36 @@
+# Large local data and generated caches
+cache/
+dataset/
+modelnet40_normal_resampled/
+
+# Python/runtime noise
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Keep only selected experiment artifacts for submission/reproducibility.
+runs/*
+!runs/dgcnn_normals_seed1/
+runs/dgcnn_normals_seed1/*
+!runs/dgcnn_normals_seed1/args.json
+!runs/dgcnn_normals_seed1/best.pt
+!runs/dgcnn_normals_seed1/best_eval.json
+!runs/dgcnn_normals_seed1/class_names.json
+!runs/dgcnn_normals_seed1/metrics.jsonl
+
+!runs/dgcnn_normals_balanced_ft_seed1/
+runs/dgcnn_normals_balanced_ft_seed1/*
+!runs/dgcnn_normals_balanced_ft_seed1/args.json
+!runs/dgcnn_normals_balanced_ft_seed1/best.pt
+!runs/dgcnn_normals_balanced_ft_seed1/best_class.pt
+!runs/dgcnn_normals_balanced_ft_seed1/best_class_eval.json
+!runs/dgcnn_normals_balanced_ft_seed1/best_eval.json
+!runs/dgcnn_normals_balanced_ft_seed1/class_names.json
+!runs/dgcnn_normals_balanced_ft_seed1/metrics.jsonl
+!runs/dgcnn_normals_balanced_ft_seed1/predict_best_class_20votes.csv
+!runs/dgcnn_normals_balanced_ft_seed1/predict_best_class_20votes.csv.metrics.json
+
+!runs/rehearsal_submission_fullscore.csv
+!runs/rehearsal_submission_fullscore.csv.metrics.json
+
