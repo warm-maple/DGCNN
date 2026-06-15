@@ -1,30 +1,51 @@
 # 运行说明
 
-环境：使用已配置好的 conda 环境 `pointnet`。
+环境：使用已配置好的 Conda 环境 `pointnet`。
 
-## 构建缓存
+## 数据来源
 
-```powershell
-conda run -n pointnet python -m pointnet_final.prepare_cache
+训练严格只使用老师给出的训练集：
+
+```text
+F:\Python Project\pointnet\dataset\train
 ```
+
+训练代码会从该训练集中按类别分层划分训练子集和验证子集。官方 ModelNet40 测试集只用于最终一次效果评估，不参与训练、checkpoint 选择或推理参数选择。
 
 ## 训练模型
 
 第一阶段训练 DGCNN 基线：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.train --run-dir runs/dgcnn_normals_seed1 --epochs 250 --batch-size 24 --eval-batch-size 32 --num-points 1024 --workers 4 --eval-votes 1 --final-votes 10 --seed 1
+conda run -n pointnet python -m pointnet_final.train --cache-dir cache/modelnet40_clean --run-dir runs/clean_stage1_seed2026 --epochs 200 --batch-size 24 --eval-batch-size 32 --num-points 1024 --points-per-shape 10000 --workers 4 --eval-votes 1 --final-votes 10 --seed 2026 --split-seed 2026 --save-every 10 --top-k-checkpoints 5
 ```
 
-第二阶段类别均衡微调：
+第二阶段类别均衡微调，复用第一阶段完全相同的训练/验证划分：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.train --run-dir runs/dgcnn_normals_balanced_ft_seed1 --epochs 80 --batch-size 24 --eval-batch-size 32 --num-points 1024 --workers 4 --eval-votes 1 --final-votes 10 --seed 2 --resume runs/dgcnn_normals_seed1/best.pt --resume-model-only --lr 0.02 --min-lr 0.00001 --label-smoothing 0.1 --balanced-sampler --class-weight-power 0.3
+conda run -n pointnet python -m pointnet_final.train --cache-dir cache/modelnet40_clean --run-dir runs/clean_stage2_balanced_seed2026 --epochs 80 --batch-size 24 --eval-batch-size 32 --num-points 1024 --points-per-shape 10000 --workers 4 --eval-votes 1 --final-votes 10 --seed 2027 --split-seed 2026 --split-from runs/clean_stage1_seed2026 --save-every 10 --top-k-checkpoints 5 --resume runs/clean_stage1_seed2026/best.pt --resume-model-only --lr 0.02 --min-lr 0.00001 --label-smoothing 0.1 --balanced-sampler --class-weight-power 0.3
+```
+
+训练会保留：
+
+- `best.pt`
+- `best_class.pt`
+- `best_balanced.pt`
+- `last.pt`
+- 每 10 轮 `epoch_XXX.pt`
+- 验证集综合分前 5 的 `top_balanced_epoch_XXX.pt`
+
+## 最终官方测试评估
+
+冻结配置后，可评估官方测试集：
+
+```powershell
+conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\Python Project\pointnet\modelnet40_normal_resampled" --test-list "F:\Python Project\pointnet\modelnet40_normal_resampled\modelnet40_test.txt" --cache-name clean_official_selected --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output runs/clean_official_evaluation/clean_equal_stage1_stage2_3votes.csv --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
 ```
 
 ## 现场推理
 
-推荐使用统一入口脚本。最高准确率模式会加载四个权重进行加权集成，并执行 3 次随机采样投票：
+推荐使用统一入口脚本：
 
 ```powershell
 .\run_inference.ps1 -TestRoot "<测试集目录>" -Output "<赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv>" -Mode max
@@ -32,15 +53,15 @@ conda run -n pointnet python -m pointnet_final.train --run-dir runs/dgcnn_normal
 
 可选模式如下：
 
-- `max`：四权重加权集成，推荐用于最终提交
-- `stable`：三权重集成，运行时间更短
-- `fast`：单模型单次采样，用于快速检查输入和输出
-- `legacy`：原始单模型多票方案，用于回退
+- `max`：两阶段权重 0.5/0.5 加权集成，推荐用于最终提交
+- `stable`：第一阶段单模型 3 票，运行时间更短
+- `fast`：第一阶段单模型 1 票，用于快速检查输入和输出
+- `legacy`：第二阶段单模型 3 票，用于对比回退
 
-最高准确率模式的完整命令为：
+完整命令为：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_refine_seed3/best.pt runs/dgcnn_refine_seed3/last.pt --model-weights 0.42 0.38 0.10 0.10 --output <赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv> --votes 3 --sampling random --batch-size 20 --workers 4 --force-cache
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv> --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
 ```
 
 测试目录既可以是直接存放 `.txt` 文件的目录，也可以是按 40 个类别划分子目录的目录。每个点云文件支持英文逗号或空白分隔，读取前六列 `x,y,z,nx,ny,nz`。
@@ -50,5 +71,5 @@ conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测
 - 完整代码：`pointnet_final/`
 - 一页设计思路：`docs/brief_design.md`
 - 运行说明：`docs/run_instructions.md`
-- 推荐权重：`runs/dgcnn_normals_seed1/best.pt`、`runs/dgcnn_normals_balanced_ft_seed1/best.pt`、`runs/dgcnn_refine_seed3/best.pt`、`runs/dgcnn_refine_seed3/last.pt`
+- 推荐权重：`runs/clean_stage1_seed2026/best.pt`、`runs/clean_stage2_balanced_seed2026/best.pt`
 - 预测结果：按验收要求命名的 `.csv`

@@ -1,0 +1,37 @@
+[
+  {
+    "epoch": 174,
+    "instance_acc": 0.9401015228426396,
+    "class_acc": 0.9136623668234485,
+    "balanced_score": 1.8537638896660882,
+    "path": "top_balanced_epoch_174.pt"
+  },
+  {
+    "epoch": 192,
+    "instance_acc": 0.9401015228426396,
+    "class_acc": 0.9098516334329112,
+    "balanced_score": 1.849953156275551,
+    "path": "top_balanced_epoch_192.pt"
+  },
+  {
+    "epoch": 179,
+    "instance_acc": 0.9390862944162437,
+    "class_acc": 0.9095780998763721,
+    "balanced_score": 1.8486643942926158,
+    "path": "top_balanced_epoch_179.pt"
+  },
+  {
+    "epoch": 157,
+    "instance_acc": 0.9401015228426396,
+    "class_acc": 0.9081974053983661,
+    "balanced_score": 1.8482989282410056,
+    "path": "top_balanced_epoch_157.pt"
+  },
+  {
+    "epoch": 200,
+    "instance_acc": 0.9401015228426396,
+    "class_acc": 0.9080520815414473,
+    "balanced_score": 1.848153604384087,
+    "path": "top_balanced_epoch_200.pt"
+  }
+]

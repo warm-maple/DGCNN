@@ -1,0 +1,40 @@
+{
+  "num_samples": 985,
+  "votes": 3,
+  "sampling": "random",
+  "reflection_tta": "none",
+  "amp": true,
+  "batch_size": 24,
+  "elapsed_seconds": 45.49649370000043,
+  "seconds_per_vote": 15.165497900000142,
+  "checkpoints": [
+    "runs\\clean_stage1_seed2026\\best.pt",
+    "runs\\clean_stage2_balanced_seed2026\\best.pt"
+  ],
+  "model_weights": [
+    0.0,
+    1.0
+  ],
+  "vote_history": [
+    {
+      "vote": 1,
+      "elapsed_seconds": 17.299756700002035,
+      "instance_acc": 0.9319796954314721,
+      "class_acc": 0.9097024751154803
+    },
+    {
+      "vote": 2,
+      "elapsed_seconds": 31.331261300001643,
+      "instance_acc": 0.9289340101522843,
+      "class_acc": 0.9058488116694257
+    },
+    {
+      "vote": 3,
+      "elapsed_seconds": 45.49443260000044,
+      "instance_acc": 0.9309644670050762,
+      "class_acc": 0.9103242075970275
+    }
+  ],
+  "instance_acc": 0.9309644670050762,
+  "class_acc": 0.9103242075970275
+}

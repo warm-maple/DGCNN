@@ -17,6 +17,7 @@ if (-not (Test-Path -LiteralPath $TestRoot)) {
 
 $common = @(
     "run", "-n", "pointnet", "python", "-m", "pointnet_final.predict_advanced",
+    "--data-root", "F:\Python Project\pointnet\modelnet40_normal_resampled",
     "--test-root", $TestRoot,
     "--cache-name", "onsite_test_advanced",
     "--output", $Output,
@@ -29,40 +30,36 @@ switch ($Mode) {
     "max" {
         $extra = @(
             "--checkpoints",
-            "runs/dgcnn_normals_seed1/best.pt",
-            "runs/dgcnn_normals_balanced_ft_seed1/best.pt",
-            "runs/dgcnn_refine_seed3/best.pt",
-            "runs/dgcnn_refine_seed3/last.pt",
-            "--model-weights", "0.42", "0.38", "0.10", "0.10",
+            "runs/clean_stage1_seed2026/best.pt",
+            "runs/clean_stage2_balanced_seed2026/best.pt",
+            "--model-weights", "0.5", "0.5",
             "--votes", "3",
-            "--batch-size", "20"
+            "--batch-size", "24"
         )
     }
     "stable" {
         $extra = @(
             "--checkpoints",
-            "runs/dgcnn_normals_seed1/best.pt",
-            "runs/dgcnn_normals_balanced_ft_seed1/best.pt",
-            "runs/dgcnn_refine_seed3/best.pt",
-            "--model-weights", "0.34", "0.36", "0.30",
+            "runs/clean_stage1_seed2026/best.pt",
             "--votes", "3",
-            "--batch-size", "24"
+            "--batch-size", "32"
         )
     }
     "fast" {
         $extra = @(
-            "--checkpoints", "runs/dgcnn_refine_seed3/best.pt",
+            "--checkpoints", "runs/clean_stage1_seed2026/best.pt",
             "--votes", "1",
             "--batch-size", "64"
         )
     }
     "legacy" {
-        & conda run -n pointnet python -m pointnet_final.predict `
+        & conda run -n pointnet python -m pointnet_final.predict_advanced `
             --test-root $TestRoot `
-            --cache-name onsite_test_legacy `
-            --checkpoints runs/dgcnn_normals_balanced_ft_seed1/best_class.pt `
+            --cache-name onsite_test_stage2 `
+            --checkpoints runs/clean_stage2_balanced_seed2026/best.pt `
             --output $Output `
-            --votes 20 `
+            --votes 3 `
+            --sampling random `
             --batch-size 32 `
             --workers 4 `
             --force-cache

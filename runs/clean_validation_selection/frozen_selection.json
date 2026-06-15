@@ -1,0 +1,17 @@
+﻿{
+  "selection_protocol": "teacher_train_split/teacher_val_split only; official test not used for selection",
+  "selected_inference": {
+    "name": "clean_equal_stage1_stage2_3votes",
+    "checkpoints": [
+      "runs/clean_stage1_seed2026/best.pt",
+      "runs/clean_stage2_balanced_seed2026/best.pt"
+    ],
+    "model_weights": [0.5, 0.5],
+    "votes": 3,
+    "sampling": "random",
+    "batch_size": 24,
+    "validation_instance_acc": 0.9370558375634518,
+    "validation_class_acc": 0.9152569711676559
+  },
+  "frozen_before_official_test": true
+}
