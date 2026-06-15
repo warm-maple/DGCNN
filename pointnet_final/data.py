@@ -46,6 +46,43 @@ def list_teacher_train(teacher_root: str | Path, class_names: list[str]) -> list
     return samples
 
 
+def stratified_train_val_split(
+    samples: list[Sample],
+    val_fraction: float = 0.1,
+    seed: int = 2026,
+) -> tuple[list[Sample], list[Sample]]:
+    if not 0.0 < val_fraction < 1.0:
+        raise ValueError("val_fraction must be between 0 and 1")
+    if any(sample.label is None for sample in samples):
+        raise ValueError("All samples must have labels for a stratified split")
+
+    by_label: dict[int, list[Sample]] = {}
+    for sample in samples:
+        assert sample.label is not None
+        by_label.setdefault(sample.label, []).append(sample)
+
+    rng = np.random.default_rng(seed)
+    train_samples: list[Sample] = []
+    val_samples: list[Sample] = []
+    for label in sorted(by_label):
+        class_samples = sorted(by_label[label], key=lambda sample: sample.sample_id)
+        if len(class_samples) < 2:
+            raise ValueError(f"Class {label} needs at least two samples")
+        order = rng.permutation(len(class_samples))
+        val_count = int(round(len(class_samples) * val_fraction))
+        val_count = min(max(val_count, 1), len(class_samples) - 1)
+        val_indices = set(int(index) for index in order[:val_count])
+        for index, sample in enumerate(class_samples):
+            if index in val_indices:
+                val_samples.append(sample)
+            else:
+                train_samples.append(sample)
+
+    train_samples.sort(key=lambda sample: sample.sample_id)
+    val_samples.sort(key=lambda sample: sample.sample_id)
+    return train_samples, val_samples
+
+
 def list_prediction_samples(root: str | Path, class_names: list[str]) -> list[Sample]:
     root = Path(root)
     name_to_label = {name: i for i, name in enumerate(class_names)}

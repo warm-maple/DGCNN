@@ -15,18 +15,22 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from .data import (
     CachedPointCloudDataset,
     build_cache,
-    list_modelnet_split,
     list_teacher_train,
     read_class_names,
+    stratified_train_val_split,
 )
 from .dgcnn import DGCNNClassifier
 from .metrics import class_accuracy, confusion_matrix, instance_accuracy
+from .checkpoints import retain_top_checkpoint
+
+
+DEFAULT_SELECTION_SPLIT = "teacher_val_split"
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train DGCNN on the teacher ModelNet40 train split.")
-    parser.add_argument("--data-root", default="modelnet40_normal_resampled")
-    parser.add_argument("--teacher-root", default="dataset/train")
+    parser.add_argument("--data-root", default=r"F:\Python Project\pointnet\modelnet40_normal_resampled")
+    parser.add_argument("--teacher-root", default=r"F:\Python Project\pointnet\dataset\train")
     parser.add_argument("--cache-dir", default="cache/modelnet40")
     parser.add_argument("--run-dir", default="runs/dgcnn_normals_seed1")
     parser.add_argument("--epochs", type=int, default=250)
@@ -49,6 +53,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eval-every", type=int, default=1)
     parser.add_argument("--eval-votes", type=int, default=1)
     parser.add_argument("--final-votes", type=int, default=10)
+    parser.add_argument("--val-fraction", type=float, default=0.1)
+    parser.add_argument("--split-seed", type=int, default=2026)
+    parser.add_argument("--split-from", default=None)
+    parser.add_argument("--save-every", type=int, default=10)
+    parser.add_argument("--top-k-checkpoints", type=int, default=5)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--no-normals", action="store_true")
     parser.add_argument("--no-amp", action="store_true")
@@ -70,12 +79,42 @@ def worker_init_fn(worker_id: int) -> None:
     random.seed(seed + worker_id)
 
 
-def ensure_caches(args: argparse.Namespace, class_names: list[str]) -> None:
+def _read_split_ids(path: Path) -> list[str]:
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def ensure_caches(args: argparse.Namespace, class_names: list[str], run_dir: Path) -> None:
     cache_dir = Path(args.cache_dir)
-    train_samples = list_teacher_train(args.teacher_root, class_names)
-    test_samples = list_modelnet_split(args.data_root, "test", class_names)
-    build_cache(train_samples, cache_dir, "teacher_train", args.points_per_shape)
-    build_cache(test_samples, cache_dir, "rehearsal_test", args.points_per_shape)
+    all_samples = list_teacher_train(args.teacher_root, class_names)
+    samples_by_id = {sample.sample_id: sample for sample in all_samples}
+
+    if args.split_from:
+        split_dir = Path(args.split_from)
+        train_ids = _read_split_ids(split_dir / "train_ids.txt")
+        val_ids = _read_split_ids(split_dir / "val_ids.txt")
+        missing = (set(train_ids) | set(val_ids)) - set(samples_by_id)
+        if missing:
+            raise ValueError(f"Split contains unknown teacher sample IDs: {sorted(missing)[:5]}")
+        train_samples = [samples_by_id[sample_id] for sample_id in train_ids]
+        val_samples = [samples_by_id[sample_id] for sample_id in val_ids]
+    else:
+        train_samples, val_samples = stratified_train_val_split(
+            all_samples,
+            val_fraction=args.val_fraction,
+            seed=args.split_seed,
+        )
+
+    train_ids = [sample.sample_id for sample in train_samples]
+    val_ids = [sample.sample_id for sample in val_samples]
+    if set(train_ids) & set(val_ids):
+        raise ValueError("Teacher train and validation splits overlap")
+    if set(train_ids) | set(val_ids) != set(samples_by_id):
+        raise ValueError("Teacher train and validation splits do not cover all samples")
+
+    (run_dir / "train_ids.txt").write_text("\n".join(train_ids) + "\n", encoding="utf-8")
+    (run_dir / "val_ids.txt").write_text("\n".join(val_ids) + "\n", encoding="utf-8")
+    build_cache(train_samples, cache_dir, "teacher_train_split", args.points_per_shape)
+    build_cache(val_samples, cache_dir, DEFAULT_SELECTION_SPLIT, args.points_per_shape)
 
 
 def make_loader(
@@ -127,7 +166,7 @@ def evaluate(
     args: argparse.Namespace,
     class_names: list[str],
     votes: int = 1,
-    split_name: str = "rehearsal_test",
+    split_name: str = DEFAULT_SELECTION_SPLIT,
 ) -> dict[str, object]:
     device = next(model.parameters()).device
     model.eval()
@@ -213,7 +252,7 @@ def main() -> None:
     class_names = read_class_names(args.data_root)
     (run_dir / "class_names.json").write_text(json.dumps(class_names, indent=2), encoding="utf-8")
     (run_dir / "args.json").write_text(json.dumps(vars(args), indent=2), encoding="utf-8")
-    ensure_caches(args, class_names)
+    ensure_caches(args, class_names, run_dir)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
@@ -243,7 +282,7 @@ def main() -> None:
     )
     loss_weight = None
     if args.class_weight_power > 0:
-        train_labels = np.load(Path(args.cache_dir) / "teacher_train_labels.npy")
+        train_labels = np.load(Path(args.cache_dir) / "teacher_train_split_labels.npy")
         counts = np.bincount(train_labels[train_labels >= 0], minlength=len(class_names)).astype(np.float64)
         weights = np.power(np.maximum(counts, 1.0), -args.class_weight_power)
         weights = weights / weights.mean()
@@ -270,7 +309,7 @@ def main() -> None:
             best_class_only_acc = float(ckpt.get("best_class_only_acc", best_class_only_acc))
             best_balanced_score = float(ckpt.get("best_balanced_score", best_balanced_score))
 
-    train_loader = make_loader(args.cache_dir, "teacher_train", args, train=True)
+    train_loader = make_loader(args.cache_dir, "teacher_train_split", args, train=True)
     metrics_path = run_dir / "metrics.jsonl"
     print(f"Training on {device} for {args.epochs} epochs; run_dir={run_dir}", flush=True)
 
@@ -314,7 +353,7 @@ def main() -> None:
             eval_result = evaluate(model, args, class_names, votes=args.eval_votes)
             inst = float(eval_result["instance_acc"])
             cls_acc = float(eval_result["class_acc"])
-            row.update({"rehearsal_instance_acc": inst, "rehearsal_class_acc": cls_acc})
+            row.update({"val_instance_acc": inst, "val_class_acc": cls_acc})
             improved = inst > best_instance_acc or (math.isclose(inst, best_instance_acc) and cls_acc > best_class_acc)
             if improved:
                 best_instance_acc = inst
@@ -370,6 +409,28 @@ def main() -> None:
                 )
                 (run_dir / "best_balanced_eval.json").write_text(json.dumps(eval_result, indent=2), encoding="utf-8")
 
+            top_path = run_dir / f"top_balanced_epoch_{epoch:03d}.pt"
+            save_checkpoint(
+                top_path,
+                model,
+                optimizer,
+                scheduler,
+                scaler,
+                epoch,
+                best_instance_acc,
+                best_class_acc,
+                args,
+                class_names,
+                best_class_only_acc,
+                best_balanced_score,
+            )
+            retain_top_checkpoint(
+                run_dir,
+                top_path,
+                {"epoch": epoch, "instance_acc": inst, "class_acc": cls_acc},
+                limit=args.top_k_checkpoints,
+            )
+
         save_checkpoint(
             run_dir / "last.pt",
             model,
@@ -384,17 +445,32 @@ def main() -> None:
             best_class_only_acc,
             best_balanced_score,
         )
+        if args.save_every > 0 and epoch % args.save_every == 0:
+            save_checkpoint(
+                run_dir / f"epoch_{epoch:03d}.pt",
+                model,
+                optimizer,
+                scheduler,
+                scaler,
+                epoch,
+                best_instance_acc,
+                best_class_acc,
+                args,
+                class_names,
+                best_class_only_acc,
+                best_balanced_score,
+            )
         with metrics_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row) + "\n")
         print(
             "epoch {epoch:03d} loss={loss:.4f} train={train:.4f} "
-            "rehearsal={inst:.4f}/{cls:.4f} best={best_inst:.4f}/{best_cls:.4f} "
+            "validation={inst:.4f}/{cls:.4f} best={best_inst:.4f}/{best_cls:.4f} "
             "lr={lr:.6f} {sec:.1f}s".format(
                 epoch=epoch,
                 loss=train_loss,
                 train=train_acc,
-                inst=row.get("rehearsal_instance_acc", float("nan")),
-                cls=row.get("rehearsal_class_acc", float("nan")),
+                inst=row.get("val_instance_acc", float("nan")),
+                cls=row.get("val_class_acc", float("nan")),
                 best_inst=best_instance_acc,
                 best_cls=best_class_acc,
                 lr=lr,
@@ -410,7 +486,7 @@ def main() -> None:
         final = evaluate(model, args, class_names, votes=args.final_votes)
         (run_dir / f"final_eval_{args.final_votes}votes.json").write_text(json.dumps(final, indent=2), encoding="utf-8")
         print(
-            f"Final {args.final_votes}-vote rehearsal: "
+            f"Final {args.final_votes}-vote validation: "
             f"instance={final['instance_acc']:.6f}, class={final['class_acc']:.6f}",
             flush=True,
         )
