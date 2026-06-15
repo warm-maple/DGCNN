@@ -21,33 +21,64 @@
 
 ## 环境
 
-使用已配置好的 conda 环境：
+推荐使用 Python 3.10 或 3.11。项目直接依赖较少，核心依赖为 PyTorch 和 NumPy。
+
+本项目已验证的环境为：
+
+- Python 3.11.15
+- PyTorch 2.11.0 + CUDA 12.8
+- NumPy 2.4.4
+- Windows 11 + NVIDIA GPU
+
+### 使用现有环境
+
+如果机器上已经存在 `pointnet` Conda 环境：
 
 ```powershell
 conda activate pointnet
+python -m pip install -r requirements.txt
 ```
 
 也可以直接用 `conda run -n pointnet ...` 执行命令。
 
+### 创建新环境
+
+```powershell
+conda create -n pointnet python=3.11 -y
+conda activate pointnet
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+`requirements.txt` 中使用兼容版本范围，便于在不同机器上安装。若需要 NVIDIA GPU 加速，建议根据机器驱动和 CUDA 环境，从 [PyTorch 官方安装页面](https://pytorch.org/get-started/locally/)选择对应的 CUDA 安装命令，再安装其他依赖。例如 CUDA 12.8：
+
+```powershell
+python -m pip install torch --index-url https://download.pytorch.org/whl/cu128
+python -m pip install numpy
+```
+
+安装完成后检查 GPU：
+
+```powershell
+python -c "import torch; print(torch.__version__); print('CUDA available:', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+当输出 `CUDA available: True` 时，训练和高级推理会自动使用 GPU；没有 CUDA 时仍可运行，但速度会明显下降。
+
 ## 现场推理
 
-如果下发的是测试目录：
+推荐直接使用统一入口。最高准确率模式加载四个权重进行加权集成，并执行 3 次随机采样投票：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict --test-root <测试集目录> --cache-name onsite_test --checkpoints runs/dgcnn_normals_balanced_ft_seed1/best_class.pt --output <赛道1-组员姓名学号.csv> --votes 20 --batch-size 32 --workers 4 --force-cache
+.\run_inference.ps1 -TestRoot "<测试集目录>" -Output "<赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv>" -Mode max
 ```
 
-如果下发的是测试 id 列表：
+`Mode` 可选：
 
-```powershell
-conda run -n pointnet python -m pointnet_final.predict --test-list <测试id列表.txt> --cache-name onsite_test --checkpoints runs/dgcnn_normals_balanced_ft_seed1/best_class.pt --output <赛道1-组员姓名学号.csv> --votes 20 --batch-size 32 --workers 4 --force-cache
-```
-
-时间充足时可使用三权重集成：
-
-```powershell
-conda run -n pointnet python -m pointnet_final.predict --test-root <测试集目录> --cache-name onsite_test --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best_class.pt --output <赛道1-组员姓名学号.csv> --votes 20 --batch-size 24 --workers 4 --force-cache
-```
+- `max`：四权重加权集成，推荐用于最终提交
+- `stable`：三权重集成，速度更快
+- `fast`：单模型单次采样，用于快速检查
+- `legacy`：原始单模型多票方案
 
 ## 推荐高级推理
 
@@ -65,15 +96,4 @@ conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测
 
 原有 `pointnet_final/predict.py` 和全部旧权重均未修改，可随时回退。
 
-也可以使用封装好的现场脚本：
-
-```powershell
-.\run_inference.ps1 -TestRoot "<测试集目录>" -Output "<赛道1-组员姓名学号.csv>" -Mode max
-```
-
-`Mode` 可选：
-
-- `max`：最高准确率方案
-- `stable`：三模型稳健方案
-- `fast`：单模型快速方案
-- `legacy`：原版回退方案
+更完整的训练、推理和提交说明见 `docs/run_instructions.md`。
