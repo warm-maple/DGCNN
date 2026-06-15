@@ -8,6 +8,7 @@
 - `docs/`：设计思路、运行说明和实验结果记录
 - `runs/dgcnn_normals_seed1/`：第一阶段 DGCNN 基线权重
 - `runs/dgcnn_normals_balanced_ft_seed1/`：类别均衡微调权重
+- `runs/dgcnn_refine_seed3/`：低学习率精炼权重
 
 ## 方法概述
 
@@ -47,3 +48,32 @@ conda run -n pointnet python -m pointnet_final.predict --test-list <测试id列�
 ```powershell
 conda run -n pointnet python -m pointnet_final.predict --test-root <测试集目录> --cache-name onsite_test --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best_class.pt --output <赛道1-组员姓名学号.csv> --votes 20 --batch-size 24 --workers 4 --force-cache
 ```
+
+## 推荐高级推理
+
+最高准确率方案使用四个轻量权重、3 次采样投票，项目测试中耗时约 137 秒：
+
+```powershell
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_refine_seed3/best.pt runs/dgcnn_refine_seed3/last.pt --model-weights 0.42 0.38 0.10 0.10 --output <赛道1-组员姓名学号.csv> --votes 3 --sampling random --batch-size 20 --workers 4 --force-cache
+```
+
+更简洁的三模型备用方案耗时约 105 秒：
+
+```powershell
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/dgcnn_normals_seed1/best.pt runs/dgcnn_normals_balanced_ft_seed1/best.pt runs/dgcnn_refine_seed3/best.pt --model-weights 0.34 0.36 0.30 --output <赛道1-组员姓名学号.csv> --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
+```
+
+原有 `pointnet_final/predict.py` 和全部旧权重均未修改，可随时回退。
+
+也可以使用封装好的现场脚本：
+
+```powershell
+.\run_inference.ps1 -TestRoot "<测试集目录>" -Output "<赛道1-组员姓名学号.csv>" -Mode max
+```
+
+`Mode` 可选：
+
+- `max`：最高准确率方案
+- `stable`：三模型稳健方案
+- `fast`：单模型快速方案
+- `legacy`：原版回退方案

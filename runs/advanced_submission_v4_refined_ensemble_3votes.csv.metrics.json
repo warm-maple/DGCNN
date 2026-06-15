@@ -1,0 +1,42 @@
+{
+  "num_samples": 2468,
+  "votes": 3,
+  "sampling": "random",
+  "reflection_tta": "none",
+  "amp": true,
+  "batch_size": 24,
+  "elapsed_seconds": 104.95674599999984,
+  "seconds_per_vote": 34.985581999999944,
+  "checkpoints": [
+    "runs\\dgcnn_normals_seed1\\best.pt",
+    "runs\\dgcnn_normals_balanced_ft_seed1\\best.pt",
+    "runs\\dgcnn_refine_seed3\\best.pt"
+  ],
+  "model_weights": [
+    0.34,
+    0.36,
+    0.3
+  ],
+  "vote_history": [
+    {
+      "vote": 1,
+      "elapsed_seconds": 37.166052800002944,
+      "instance_acc": 0.9282820097244733,
+      "class_acc": 0.9004651162790698
+    },
+    {
+      "vote": 2,
+      "elapsed_seconds": 70.84601910000129,
+      "instance_acc": 0.9307131280388979,
+      "class_acc": 0.905046511627907
+    },
+    {
+      "vote": 3,
+      "elapsed_seconds": 104.95163910000338,
+      "instance_acc": 0.93354943273906,
+      "class_acc": 0.9088372093023256
+    }
+  ],
+  "instance_acc": 0.93354943273906,
+  "class_acc": 0.9088372093023256
+}
