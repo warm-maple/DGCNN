@@ -1,0 +1,19 @@
+﻿{
+  "selection_protocol": "teacher validation split only; official test not used for checkpoint selection",
+  "optimized_inference": {
+    "name": "clean_equal_stage1_stage2_7votes",
+    "checkpoints": [
+      "runs/clean_stage1_seed2026/best.pt",
+      "runs/clean_stage2_balanced_seed2026/best.pt"
+    ],
+    "model_weights": [0.5, 0.5],
+    "votes": 7,
+    "sampling": "random",
+    "batch_size": 24,
+    "validation_instance_acc": 0.9380710659898477,
+    "validation_class_acc": 0.9181273415380262,
+    "official_instance_acc": 0.9258508914100486,
+    "official_class_acc": 0.9061627906976744,
+    "official_elapsed_seconds": 176.11111789999995
+  }
+}

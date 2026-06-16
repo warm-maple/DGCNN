@@ -19,5 +19,7 @@ runs/*
 !runs/clean_stage2_balanced_seed2026/**
 !runs/clean_validation_selection/
 !runs/clean_validation_selection/**
+!runs/clean_inference_optimization/
+!runs/clean_inference_optimization/**
 !runs/clean_official_evaluation/
 !runs/clean_official_evaluation/**

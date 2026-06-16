@@ -53,7 +53,7 @@ conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\
 
 可选模式如下：
 
-- `max`：两阶段权重 0.5/0.5 加权集成，推荐用于最终提交
+- `max`：两阶段权重 0.5/0.5 加权集成，7 票随机采样，推荐用于最终提交
 - `stable`：第一阶段单模型 3 票，运行时间更短
 - `fast`：第一阶段单模型 1 票，用于快速检查输入和输出
 - `legacy`：第二阶段单模型 3 票，用于对比回退
@@ -61,7 +61,7 @@ conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\
 完整命令为：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv> --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv> --votes 7 --sampling random --batch-size 24 --workers 4 --force-cache
 ```
 
 测试目录既可以是直接存放 `.txt` 文件的目录，也可以是按 40 个类别划分子目录的目录。每个点云文件支持英文逗号或空白分隔，读取前六列 `x,y,z,nx,ny,nz`。

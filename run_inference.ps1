@@ -33,7 +33,7 @@ switch ($Mode) {
             "runs/clean_stage1_seed2026/best.pt",
             "runs/clean_stage2_balanced_seed2026/best.pt",
             "--model-weights", "0.5", "0.5",
-            "--votes", "3",
+            "--votes", "7",
             "--batch-size", "24"
         )
     }

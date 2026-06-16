@@ -41,7 +41,7 @@ python -c "import torch; print(torch.__version__); print('CUDA available:', torc
 
 ## 现场推理
 
-推荐使用统一入口。`max` 模式加载第一阶段和第二阶段由验证集选择的权重，按 0.5/0.5 加权集成，并执行 3 次随机采样投票：
+推荐使用统一入口。`max` 模式加载第一阶段和第二阶段由验证集选择的权重，按 0.5/0.5 加权集成，并执行 7 次随机采样投票：
 
 ```powershell
 .\run_inference.ps1 -TestRoot "<测试集目录>" -Output "<赛道1-组员1姓名学号-组员2姓名学号-组员3姓名学号.csv>" -Mode max
@@ -57,12 +57,12 @@ python -c "import torch; print(torch.__version__); print('CUDA available:', torc
 完整命令：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员姓名学号.csv> --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员姓名学号.csv> --votes 7 --sampling random --batch-size 24 --workers 4 --force-cache
 ```
 
 本次严格实验的最终冻结配置在官方测试集上的一次性评估结果为：
 
-- Instance Accuracy：92.54%
-- Class Accuracy：90.52%
+- Instance Accuracy：92.59%
+- Class Accuracy：90.62%
 
 更完整的训练、推理和提交说明见 `docs/run_instructions.md`。
