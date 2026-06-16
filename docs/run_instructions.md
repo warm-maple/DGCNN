@@ -40,7 +40,7 @@ conda run -n pointnet python -m pointnet_final.train --cache-dir cache/modelnet4
 冻结配置后，可评估官方测试集：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\Python Project\pointnet\modelnet40_normal_resampled" --test-list "F:\Python Project\pointnet\modelnet40_normal_resampled\modelnet40_test.txt" --cache-name clean_official_selected --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output runs/clean_official_evaluation/clean_equal_stage1_stage2_3votes.csv --votes 3 --sampling random --batch-size 24 --workers 4 --force-cache
+conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\Python Project\pointnet\modelnet40_normal_resampled" --test-list "F:\Python Project\pointnet\modelnet40_normal_resampled\modelnet40_test.txt" --cache-name clean_official_selected --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output runs/clean_official_evaluation/clean_equal_stage1_stage2_7votes.csv --votes 7 --sampling random --seed 2026 --batch-size 24 --workers 4 --force-cache
 ```
 
 ## 现场推理
