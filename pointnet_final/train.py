@@ -15,7 +15,8 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from .data import (
     CachedPointCloudDataset,
     build_cache,
-    list_teacher_train,
+    infer_class_names_from_dirs,
+    list_training_samples,
     read_class_names,
     stratified_train_val_split,
 )
@@ -24,13 +25,13 @@ from .metrics import class_accuracy, confusion_matrix, instance_accuracy
 from .checkpoints import retain_top_checkpoint
 
 
-DEFAULT_SELECTION_SPLIT = "teacher_val_split"
+DEFAULT_SELECTION_SPLIT = "val_split"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train DGCNN on the teacher ModelNet40 train split.")
-    parser.add_argument("--data-root", default=r"F:\Python Project\pointnet\modelnet40_normal_resampled")
-    parser.add_argument("--teacher-root", default=r"F:\Python Project\pointnet\dataset\train")
+    parser = argparse.ArgumentParser(description="Train DGCNN on ModelNet40 point clouds.")
+    parser.add_argument("--data-root", default="data/modelnet40")
+    parser.add_argument("--train-root", default="dataset/train")
     parser.add_argument("--cache-dir", default="cache/modelnet40")
     parser.add_argument("--run-dir", default="runs/dgcnn_normals_seed1")
     parser.add_argument("--epochs", type=int, default=250)
@@ -85,7 +86,7 @@ def _read_split_ids(path: Path) -> list[str]:
 
 def ensure_caches(args: argparse.Namespace, class_names: list[str], run_dir: Path) -> None:
     cache_dir = Path(args.cache_dir)
-    all_samples = list_teacher_train(args.teacher_root, class_names)
+    all_samples = list_training_samples(args.train_root, class_names)
     samples_by_id = {sample.sample_id: sample for sample in all_samples}
 
     if args.split_from:
@@ -94,7 +95,7 @@ def ensure_caches(args: argparse.Namespace, class_names: list[str], run_dir: Pat
         val_ids = _read_split_ids(split_dir / "val_ids.txt")
         missing = (set(train_ids) | set(val_ids)) - set(samples_by_id)
         if missing:
-            raise ValueError(f"Split contains unknown teacher sample IDs: {sorted(missing)[:5]}")
+            raise ValueError(f"Split contains unknown sample IDs: {sorted(missing)[:5]}")
         train_samples = [samples_by_id[sample_id] for sample_id in train_ids]
         val_samples = [samples_by_id[sample_id] for sample_id in val_ids]
     else:
@@ -107,13 +108,13 @@ def ensure_caches(args: argparse.Namespace, class_names: list[str], run_dir: Pat
     train_ids = [sample.sample_id for sample in train_samples]
     val_ids = [sample.sample_id for sample in val_samples]
     if set(train_ids) & set(val_ids):
-        raise ValueError("Teacher train and validation splits overlap")
+        raise ValueError("Train and validation splits overlap")
     if set(train_ids) | set(val_ids) != set(samples_by_id):
-        raise ValueError("Teacher train and validation splits do not cover all samples")
+        raise ValueError("Train and validation splits do not cover all samples")
 
     (run_dir / "train_ids.txt").write_text("\n".join(train_ids) + "\n", encoding="utf-8")
     (run_dir / "val_ids.txt").write_text("\n".join(val_ids) + "\n", encoding="utf-8")
-    build_cache(train_samples, cache_dir, "teacher_train_split", args.points_per_shape)
+    build_cache(train_samples, cache_dir, "train_split", args.points_per_shape)
     build_cache(val_samples, cache_dir, DEFAULT_SELECTION_SPLIT, args.points_per_shape)
 
 
@@ -249,7 +250,12 @@ def main() -> None:
     run_dir = Path(args.run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    class_names = read_class_names(args.data_root)
+    try:
+        class_names = read_class_names(args.data_root)
+    except FileNotFoundError:
+        class_names = infer_class_names_from_dirs(args.train_root)
+    if not class_names:
+        raise ValueError("No class names found. Check --data-root or --train-root.")
     (run_dir / "class_names.json").write_text(json.dumps(class_names, indent=2), encoding="utf-8")
     (run_dir / "args.json").write_text(json.dumps(vars(args), indent=2), encoding="utf-8")
     ensure_caches(args, class_names, run_dir)
@@ -282,7 +288,7 @@ def main() -> None:
     )
     loss_weight = None
     if args.class_weight_power > 0:
-        train_labels = np.load(Path(args.cache_dir) / "teacher_train_split_labels.npy")
+        train_labels = np.load(Path(args.cache_dir) / "train_split_labels.npy")
         counts = np.bincount(train_labels[train_labels >= 0], minlength=len(class_names)).astype(np.float64)
         weights = np.power(np.maximum(counts, 1.0), -args.class_weight_power)
         weights = weights / weights.mean()
@@ -309,7 +315,7 @@ def main() -> None:
             best_class_only_acc = float(ckpt.get("best_class_only_acc", best_class_only_acc))
             best_balanced_score = float(ckpt.get("best_balanced_score", best_balanced_score))
 
-    train_loader = make_loader(args.cache_dir, "teacher_train_split", args, train=True)
+    train_loader = make_loader(args.cache_dir, "train_split", args, train=True)
     metrics_path = run_dir / "metrics.jsonl"
     print(f"Training on {device} for {args.epochs} epochs; run_dir={run_dir}", flush=True)
 

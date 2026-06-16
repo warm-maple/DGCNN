@@ -23,6 +23,11 @@ def read_class_names(data_root: str | Path) -> list[str]:
     return [line.strip() for line in path.read_text().splitlines() if line.strip()]
 
 
+def infer_class_names_from_dirs(root: str | Path) -> list[str]:
+    root = Path(root)
+    return sorted(path.name for path in root.iterdir() if path.is_dir())
+
+
 def list_modelnet_split(data_root: str | Path, split: str, class_names: list[str]) -> list[Sample]:
     data_root = Path(data_root)
     name_to_label = {name: i for i, name in enumerate(class_names)}
@@ -35,12 +40,12 @@ def list_modelnet_split(data_root: str | Path, split: str, class_names: list[str
     return samples
 
 
-def list_teacher_train(teacher_root: str | Path, class_names: list[str]) -> list[Sample]:
-    teacher_root = Path(teacher_root)
+def list_training_samples(train_root: str | Path, class_names: list[str]) -> list[Sample]:
+    train_root = Path(train_root)
     name_to_label = {name: i for i, name in enumerate(class_names)}
     samples: list[Sample] = []
     for cls in class_names:
-        cls_dir = teacher_root / cls
+        cls_dir = train_root / cls
         for path in sorted(cls_dir.glob("*.txt")):
             samples.append(Sample(path.stem, path, name_to_label[cls]))
     return samples
@@ -95,10 +100,14 @@ def list_prediction_samples(root: str | Path, class_names: list[str]) -> list[Sa
             if not cls_dir.is_dir():
                 continue
             for path in sorted(cls_dir.glob("*.txt")):
+                if path.name.startswith("._"):
+                    continue
                 samples.append(Sample(path.stem, path, name_to_label[cls]))
         return samples
 
     for path in sorted(root.glob("*.txt")):
+        if path.name.startswith("._"):
+            continue
         inferred = infer_label_from_id(path.stem, class_names)
         samples.append(Sample(path.stem, path, inferred))
     return samples

@@ -4,6 +4,11 @@ dataset/
 modelnet40_normal_resampled/
 snapshots/
 logs/
+test/
+modelnet40_csv_test_package/
+submission*.csv
+*.csv
+*.metrics.json
 
 # Python/runtime noise
 __pycache__/
@@ -17,9 +22,3 @@ runs/*
 !runs/clean_stage1_seed2026/**
 !runs/clean_stage2_balanced_seed2026/
 !runs/clean_stage2_balanced_seed2026/**
-!runs/clean_validation_selection/
-!runs/clean_validation_selection/**
-!runs/clean_inference_optimization/
-!runs/clean_inference_optimization/**
-!runs/clean_official_evaluation/
-!runs/clean_official_evaluation/**

@@ -5,8 +5,9 @@ from pathlib import Path
 
 from .data import (
     build_cache,
+    infer_class_names_from_dirs,
     list_prediction_samples,
-    list_teacher_train,
+    list_training_samples,
     read_class_names,
     stratified_train_val_split,
 )
@@ -14,8 +15,8 @@ from .data import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build fast .npy caches for ModelNet40 txt point clouds.")
-    parser.add_argument("--data-root", default=r"F:\Python Project\pointnet\modelnet40_normal_resampled")
-    parser.add_argument("--teacher-root", default=r"F:\Python Project\pointnet\dataset\train")
+    parser.add_argument("--data-root", default="data/modelnet40")
+    parser.add_argument("--train-root", default="dataset/train")
     parser.add_argument("--cache-dir", default="cache/modelnet40")
     parser.add_argument("--points-per-shape", type=int, default=10000)
     parser.add_argument("--force", action="store_true")
@@ -28,18 +29,23 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    class_names = read_class_names(args.data_root)
+    try:
+        class_names = read_class_names(args.data_root)
+    except FileNotFoundError:
+        class_names = infer_class_names_from_dirs(args.train_root)
+    if not class_names:
+        raise ValueError("No class names found. Check --data-root or --train-root.")
     cache_dir = Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
 
-    all_samples = list_teacher_train(args.teacher_root, class_names)
+    all_samples = list_training_samples(args.train_root, class_names)
     train_samples, val_samples = stratified_train_val_split(
         all_samples,
         val_fraction=args.val_fraction,
         seed=args.split_seed,
     )
-    build_cache(train_samples, cache_dir, "teacher_train_split", args.points_per_shape, force=args.force)
-    build_cache(val_samples, cache_dir, "teacher_val_split", args.points_per_shape, force=args.force)
+    build_cache(train_samples, cache_dir, "train_split", args.points_per_shape, force=args.force)
+    build_cache(val_samples, cache_dir, "val_split", args.points_per_shape, force=args.force)
 
     if args.predict_root:
         predict_samples = list_prediction_samples(args.predict_root, class_names)

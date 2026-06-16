@@ -70,7 +70,8 @@ class AdvancedVoteDataset(Dataset):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Fast multi-vote inference with coverage sampling and AMP.")
-    parser.add_argument("--data-root", default="modelnet40_normal_resampled")
+    parser.add_argument("--data-root", default="data/modelnet40")
+    parser.add_argument("--class-names", default=None, help="Optional class-name txt/json file.")
     parser.add_argument("--test-root", default=None)
     parser.add_argument("--test-list", default=None)
     parser.add_argument("--unlabeled-list", action="store_true")
@@ -98,6 +99,13 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def read_class_names_file(path: str | Path) -> list[str]:
+    path = Path(path)
+    if path.suffix.lower() == ".json":
+        return list(json.loads(path.read_text(encoding="utf-8")))
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
 def load_model(checkpoint_path: Path, device: torch.device) -> tuple[DGCNNClassifier, dict, list[str]]:
     checkpoint = torch.load(checkpoint_path, map_location=device)
     model_args = checkpoint.get("args", {})
@@ -117,7 +125,12 @@ def load_model(checkpoint_path: Path, device: torch.device) -> tuple[DGCNNClassi
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
-    class_names = read_class_names(args.data_root)
+    checkpoint_paths = [Path(path) for path in args.checkpoints]
+    if args.class_names:
+        class_names = read_class_names_file(args.class_names)
+    else:
+        checkpoint_preview = torch.load(checkpoint_paths[0], map_location="cpu")
+        class_names = list(checkpoint_preview["class_names"])
     if args.test_list:
         samples = list_samples_from_ids(args.data_root, args.test_list, class_names, labeled=not args.unlabeled_list)
     elif args.test_root:
@@ -133,7 +146,6 @@ def main() -> None:
         torch.backends.cudnn.benchmark = True
         torch.set_float32_matmul_precision("high")
 
-    checkpoint_paths = [Path(path) for path in args.checkpoints]
     loaded = [load_model(path, device) for path in checkpoint_paths]
     models = [item[0] for item in loaded]
     model_args = [item[1] for item in loaded]

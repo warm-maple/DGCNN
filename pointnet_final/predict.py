@@ -22,7 +22,8 @@ from .metrics import class_accuracy, instance_accuracy
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Predict ModelNet40 labels and write the required CSV.")
-    parser.add_argument("--data-root", default="modelnet40_normal_resampled")
+    parser.add_argument("--data-root", default="data/modelnet40")
+    parser.add_argument("--class-names", default=None, help="Optional class-name txt/json file.")
     parser.add_argument("--test-root", default=None)
     parser.add_argument("--test-list", default=None, help="Optional file containing sample ids to predict.")
     parser.add_argument("--unlabeled-list", action="store_true", help="Do not infer labels from --test-list ids.")
@@ -38,6 +39,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--force-cache", action="store_true")
     return parser.parse_args()
+
+
+def read_class_names_file(path: str | Path) -> list[str]:
+    path = Path(path)
+    if path.suffix.lower() == ".json":
+        return list(json.loads(path.read_text(encoding="utf-8")))
+    return [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def load_model(checkpoint_path: str | Path, device: torch.device) -> tuple[DGCNNClassifier, dict, list[str]]:
@@ -60,7 +68,12 @@ def load_model(checkpoint_path: str | Path, device: torch.device) -> tuple[DGCNN
 @torch.no_grad()
 def main() -> None:
     args = parse_args()
-    class_names = read_class_names(args.data_root)
+    checkpoints = [Path(p) for p in args.checkpoints]
+    if args.class_names:
+        class_names = read_class_names_file(args.class_names)
+    else:
+        checkpoint_preview = torch.load(checkpoints[0], map_location="cpu")
+        class_names = list(checkpoint_preview["class_names"])
     if args.test_list:
         samples = list_samples_from_ids(args.data_root, args.test_list, class_names, labeled=not args.unlabeled_list)
     elif args.test_root:
@@ -72,7 +85,6 @@ def main() -> None:
     build_cache(samples, args.cache_dir, args.cache_name, args.points_per_shape, force=args.force_cache)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    checkpoints = [Path(p) for p in args.checkpoints]
     models = []
     model_args = []
     for ckpt_path in checkpoints:
