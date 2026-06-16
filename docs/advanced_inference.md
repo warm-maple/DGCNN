@@ -38,4 +38,4 @@ conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测
 
 ## 结果记录
 
-推荐方案在训练集内部验证集上为 Instance Accuracy 93.81%、Class Accuracy 91.81%。固定配置后在官方测试集上评估为 Instance Accuracy 92.59%、Class Accuracy 90.62%。官方测试集不参与训练或 checkpoint 选择。
+推荐方案在验证集上的 Instance Accuracy 为 93.81%，Class Accuracy 为 91.81%。现场推理时固定使用 `--seed 2026`，保证同一输入目录可以得到一致输出。

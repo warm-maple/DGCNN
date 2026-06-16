@@ -6,16 +6,15 @@
 
 - `pointnet_final/`：训练、评估、推理代码
 - `docs/`：设计思路、运行说明和实验结果记录
-- `runs/clean_stage1_seed2026/`：严格验证集选模的第一阶段权重
-- `runs/clean_stage2_balanced_seed2026/`：严格验证集选模的第二阶段类别均衡微调权重
-- `runs/clean_validation_selection/`：只基于训练集内部验证集得到的推理配置选择记录
-- `runs/clean_official_evaluation/`：配置冻结后的官方测试集最终评估记录
+- `runs/clean_stage1_seed2026/`：第一阶段 DGCNN 基线权重
+- `runs/clean_stage2_balanced_seed2026/`：第二阶段类别均衡微调权重
+- `runs/clean_validation_selection/`：推理配置选择记录
 
 ## 方法概述
 
 模型采用 DGCNN 分类网络，同时使用点坐标和法向量信息。训练阶段对点云进行归一化、固定点数采样和随机增强；第二阶段从第一阶段验证集最优权重继续微调，加入类别均衡采样和类别加权损失，以提升 Class Accuracy。
 
-本版本采用严格实验流程：从老师训练集内部按类别分层划分训练集和验证集，`best.pt`、`best_class.pt`、`best_balanced.pt` 只依据验证集保存。官方测试集不参与训练、权重选择或推理参数选择，只在最终配置冻结后评估一次。
+训练时从训练数据中按类别分层划分训练子集和验证子集，`best.pt`、`best_class.pt`、`best_balanced.pt` 依据验证集指标保存。推理阶段使用两阶段权重加权集成，并通过固定 seed 的多次采样投票提升稳定性。
 
 ## 环境
 
@@ -59,10 +58,5 @@ python -c "import torch; print(torch.__version__); print('CUDA available:', torc
 ```powershell
 conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员姓名学号.csv> --votes 7 --sampling random --seed 2026 --batch-size 24 --workers 4 --force-cache
 ```
-
-本次严格实验的最终冻结配置在官方测试集上的一次性评估结果为：
-
-- Instance Accuracy：92.59%
-- Class Accuracy：90.62%
 
 更完整的训练、推理和提交说明见 `docs/run_instructions.md`。

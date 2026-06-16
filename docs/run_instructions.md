@@ -2,15 +2,15 @@
 
 环境：使用已配置好的 Conda 环境 `pointnet`。
 
-## 数据来源
+## 数据目录
 
-训练严格只使用老师给出的训练集：
+训练数据目录：
 
 ```text
 F:\Python Project\pointnet\dataset\train
 ```
 
-训练代码会从该训练集中按类别分层划分训练子集和验证子集。官方 ModelNet40 测试集只用于最终一次效果评估，不参与训练、checkpoint 选择或推理参数选择。
+训练代码会从该目录中按类别分层划分训练子集和验证子集。
 
 ## 训练模型
 
@@ -34,14 +34,6 @@ conda run -n pointnet python -m pointnet_final.train --cache-dir cache/modelnet4
 - `last.pt`
 - 每 10 轮 `epoch_XXX.pt`
 - 验证集综合分前 5 的 `top_balanced_epoch_XXX.pt`
-
-## 最终官方测试评估
-
-冻结配置后，可评估官方测试集：
-
-```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --data-root "F:\Python Project\pointnet\modelnet40_normal_resampled" --test-list "F:\Python Project\pointnet\modelnet40_normal_resampled\modelnet40_test.txt" --cache-name clean_official_selected --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output runs/clean_official_evaluation/clean_equal_stage1_stage2_7votes.csv --votes 7 --sampling random --seed 2026 --batch-size 24 --workers 4 --force-cache
-```
 
 ## 现场推理
 
