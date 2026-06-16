@@ -93,7 +93,7 @@ conda run -n pointnet python -m pointnet_final.train --data-root data/modelnet40
 conda run -n pointnet python -m pointnet_final.train --data-root data/modelnet40 --train-root dataset/train --cache-dir cache/modelnet40_clean --run-dir runs/clean_stage2_balanced_seed2026 --epochs 80 --batch-size 24 --eval-batch-size 32 --num-points 1024 --points-per-shape 10000 --workers 4 --eval-votes 1 --final-votes 10 --seed 2027 --split-seed 2026 --split-from runs/clean_stage1_seed2026 --save-every 10 --top-k-checkpoints 5 --resume runs/clean_stage1_seed2026/best.pt --resume-model-only --lr 0.02 --min-lr 0.00001 --label-smoothing 0.1 --balanced-sampler --class-weight-power 0.3
 ```
 
-训练会保存 `best.pt`、`best_class.pt`、`best_balanced.pt`、`last.pt`、周期 checkpoint 以及综合指标较好的 checkpoint。
+训练过程中可以按需保存中间 checkpoint。最终提交包只保留两阶段推理所需的 `best.pt` 权重。
 
 ## 5. 提交材料
 
