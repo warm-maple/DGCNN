@@ -21,7 +21,7 @@ $ProjectRoot = Split-Path -Parent $PSCommandPath
 Push-Location $ProjectRoot
 try {
     $common = @(
-        "run", "-n", "pointnet", "python", "-m", "pointnet_final.predict_advanced",
+        "run", "--no-capture-output", "-n", "pointnet", "python", "-m", "pointnet_final.predict_advanced",
         "--test-root", $ResolvedTestRoot,
         "--cache-name", "onsite_test_advanced",
         "--output", $Output,
