@@ -22,6 +22,7 @@ $common = @(
     "--cache-name", "onsite_test_advanced",
     "--output", $Output,
     "--sampling", "random",
+    "--seed", "2026",
     "--workers", "4",
     "--force-cache"
 )
@@ -60,6 +61,7 @@ switch ($Mode) {
             --output $Output `
             --votes 3 `
             --sampling random `
+            --seed 2026 `
             --batch-size 32 `
             --workers 4 `
             --force-cache

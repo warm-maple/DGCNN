@@ -1,0 +1,21 @@
+﻿{
+  "purpose": "Fixed-seed sensitivity check for 7-vote clean inference.",
+  "default_seed": 2026,
+  "reason": "Seed 2026 was selected from the teacher validation split before official-test inspection and remains the validation-best seed among tested seeds.",
+  "validation": [
+    {"seed": 2026, "instance_acc": 0.9380710659898477, "class_acc": 0.9181273415380262},
+    {"seed": 2027, "instance_acc": 0.9329949238578681, "class_acc": 0.9059415288071373},
+    {"seed": 2028, "instance_acc": 0.9380710659898477, "class_acc": 0.9131150866360664}
+  ],
+  "official_test": [
+    {"seed": 2026, "instance_acc": 0.9258508914100486, "class_acc": 0.9061627906976744},
+    {"seed": 2027, "instance_acc": 0.9294975688816856, "class_acc": 0.9078662790697674},
+    {"seed": 2028, "instance_acc": 0.9270664505672609, "class_acc": 0.9051627906976744}
+  ],
+  "official_test_range": {
+    "instance_acc_min": 0.9258508914100486,
+    "instance_acc_max": 0.9294975688816856,
+    "class_acc_min": 0.9051627906976744,
+    "class_acc_max": 0.9078662790697674
+  }
+}

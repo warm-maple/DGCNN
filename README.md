@@ -57,7 +57,7 @@ python -c "import torch; print(torch.__version__); print('CUDA available:', torc
 完整命令：
 
 ```powershell
-conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员姓名学号.csv> --votes 7 --sampling random --batch-size 24 --workers 4 --force-cache
+conda run -n pointnet python -m pointnet_final.predict_advanced --test-root <测试集目录> --cache-name onsite_test_advanced --checkpoints runs/clean_stage1_seed2026/best.pt runs/clean_stage2_balanced_seed2026/best.pt --model-weights 0.5 0.5 --output <赛道1-组员姓名学号.csv> --votes 7 --sampling random --seed 2026 --batch-size 24 --workers 4 --force-cache
 ```
 
 本次严格实验的最终冻结配置在官方测试集上的一次性评估结果为：
